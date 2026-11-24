@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multiple Choice Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light; --ink: #252525; --muted: #717171; --line: #dedede; --paper: #f7f7f5; --white: #fff; --red: #a64242; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.45 "Inter", sans-serif; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 28px 22px 56px; }
+    .page-nav { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 30px; }
+    .page-nav a { color: var(--ink); text-decoration: none; font-weight: 600; }
+    .page-nav a:hover { text-decoration: underline; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.1rem); letter-spacing: -.04em; }
+    .sub { margin: 5px 0 0; color: var(--muted); }
+    .stats { display: flex; gap: 24px; text-align: right; }
+    .stat-label { display: block; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+    .stat-value { display: block; font-size: 1.35rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .stat-value.urgent { color: var(--red); animation: pulse 1s infinite; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; }
+    .message { color: var(--muted); min-height: 1.5em; }
+    .player-controls { display: flex; align-items: center; gap: 10px; }
+    .player-controls label { color: var(--muted); font-size: .9rem; }
+    input { width: 180px; max-width: 45vw; padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; font: inherit; }
+    button { appearance: none; border: 0; border-radius: 6px; padding: 10px 16px; background: var(--ink); color: white; font: inherit; font-weight: 600; cursor: pointer; }
+    button:hover { background: #444; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #555; outline-offset: 2px; }
+    .question-card { padding: clamp(20px, 5vw, 34px); background: var(--white); border: 1px solid var(--line); border-radius: 8px; }
+    .question-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: var(--muted); font-size: .86rem; }
+    .category { text-transform: uppercase; letter-spacing: .06em; }
+    .question { margin: 0 0 24px; font-size: clamp(1.3rem, 3vw, 1.75rem); line-height: 1.3; letter-spacing: -.025em; }
+    .options { display: grid; gap: 10px; }
+    .option { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 10px 14px; border: 1px solid #c9c9c9; border-radius: 6px; background: white; color: var(--ink); text-align: left; font-weight: 500; }
+    .option:hover:not(:disabled) { border-color: #555; background: #f0f0ee; }
+    .option:disabled { opacity: .75; cursor: default; }
+    .letter { display: grid; place-items: center; flex: 0 0 28px; height: 28px; border: 1px solid #c9c9c9; border-radius: 50%; font-size: .82rem; font-weight: 600; }
+    .hint { margin: 12px 2px 0; color: var(--muted); font-size: .85rem; }
+    .overlay { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: #202020a6; animation: fade-in .25s ease-out; }
+    .overlay[hidden] { display: none; }
+    .result { width: min(390px, 100%); padding: 30px 24px; border-radius: 10px; background: white; text-align: center; box-shadow: 0 18px 60px #0003; animation: result-in .4s cubic-bezier(.2,.8,.2,1); }
+    .result h2 { margin: 0; font-size: 1.8rem; }
+    .result p { margin: 8px 0 22px; color: var(--muted); }
+    .result-score { margin: 14px 0 22px; font-size: 3rem; font-weight: 750; line-height: 1; }
+    @keyframes pulse { 50% { opacity: .45; } }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes result-in { from { transform: translateY(18px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+    @media (max-width: 560px) {
+      .wrap { padding: 20px 14px 36px; }
+      header { align-items: flex-start; flex-direction: column; gap: 14px; }
+      .stats { width: 100%; justify-content: space-between; text-align: left; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .player-controls { flex-wrap: wrap; }
+      .player-controls label { width: 100%; }
+      input, .player-controls button { width: 100%; max-width: none; }
+      .question-meta { flex-direction: column; gap: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <nav class="page-nav" aria-label="Quiz pages">
+      <a href="index.html">← Picture match</a>
+      <span>Quiz 2 of 2</span>
+    </nav>
+    <header>
+      <div><h1>Multiple Choice</h1><p class="sub">Choose an answer before the timer runs out.</p></div>
+      <div class="stats" aria-label="Quiz score">
+        <div><span class="stat-label" id="score-label">Score</span><span class="stat-value" id="score">0</span></div>
+        <div><span class="stat-label">Time</span><span class="stat-value" id="time">40</span></div>
+        <div><span class="stat-label">Best</span><span class="stat-value" id="best">0</span></div>
+      </div>
+    </header>
+    <section class="toolbar">
+      <div class="message" id="message" aria-live="polite">Answer as many questions as you can in 40 seconds. Correct answers earn 1 point.</div>
+      <div class="player-controls">
+        <label for="player-name">Your name</label>
+        <input id="player-name" maxlength="24" placeholder="Enter your name" autocomplete="given-name">
+        <button id="start" type="button">Start quiz</button>
+      </div>
+    </section>
+    <section class="question-card" id="question-card" hidden>
+      <div class="question-meta"><span class="category" id="category"></span><span id="progress"></span></div>
+      <h2 class="question" id="question"></h2>
+      <div class="options" id="options"></div>
+    </section>
+    <p class="hint">Each question has four choices. One point for each correct answer.</p>
+  </main>
+  <div class="overlay" id="result-overlay" hidden>
+    <section class="result" role="dialog" aria-modal="true" aria-labelledby="result-title">
+      <h2 id="result-title">Time's up!</h2>
+      <p id="result-player"></p>
+      <div class="result-score" id="result-score">0</div>
+      <p>points</p>
+      <button id="play-again" type="button">Play again</button>
+    </section>
+  </div>
+  <script src="questions.js"></script>
+  <script>
+    // Change this value to set the length of each multiple-choice round.
+    const TOTAL_TIME_SECONDS = 40;
+    const questions = Array.isArray(window.quizQuestions) ? window.quizQuestions : [];
+    const scoreEl = document.querySelector('#score');
+    const timeEl = document.querySelector('#time');
+    const bestEl = document.querySelector('#best');
+    const scoreLabel = document.querySelector('#score-label');
+    const message = document.querySelector('#message');
+    const startButton = document.querySelector('#start');
+    const playerNameInput = document.querySelector('#player-name');
+    const questionCard = document.querySelector('#question-card');
+    const categoryEl = document.querySelector('#category');
+    const progressEl = document.querySelector('#progress');
+    const questionEl = document.querySelector('#question');
+    const optionsEl = document.querySelector('#options');
+    const resultOverlay = document.querySelector('#result-overlay');
+    let score = 0;
+    let seconds = TOTAL_TIME_SECONDS;
+    let timer = null;
+    let advanceTimer = null;
+    let running = false;
+    let answered = false;
+    let deck = [];
+    let questionIndex = 0;
+    let playerName = '';
+    let best = 0;
+
+    function readStorage(key, fallback = null) {
+      try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+    }
+    function writeStorage(key, value) {
+      try { localStorage.setItem(key, value); } catch { /* The quiz still works if storage is blocked. */ }
+    }
+    function scoreKey(name) { return `multipleChoiceScore:${name.trim().toLocaleLowerCase()}`; }
+    function readRecord(name) {
+      try {
+        const record = JSON.parse(readStorage(scoreKey(name), '{"best":0}'));
+        return record && typeof record === 'object' ? record : { best: 0 };
+      } catch { return { best: 0 }; }
+    }
+    function saveScore() {
+      const record = readRecord(playerName);
+      record.name = playerName;
+      record.score = score;
+      record.best = Math.max(Number(record.best) || 0, score);
+      writeStorage(scoreKey(playerName), JSON.stringify(record));
+      best = record.best;
+      bestEl.textContent = best;
+    }
+    function shuffle(list) {
+      const result = [...list];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+    function showQuestion() {
+      answered = false;
+      if (questionIndex >= deck.length) { finish('All questions answered!'); return; }
+      const current = deck[questionIndex];
+      categoryEl.textContent = current.category;
+      progressEl.textContent = `Question ${questionIndex + 1} of ${deck.length}`;
+      questionEl.textContent = current.question;
+      optionsEl.replaceChildren();
+      current.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'option';
+        const letter = document.createElement('span');
+        letter.className = 'letter';
+        letter.textContent = String.fromCharCode(65 + index);
+        const label = document.createElement('span');
+        label.textContent = option;
+        button.append(letter, label);
+        button.addEventListener('click', () => chooseAnswer(index));
+        optionsEl.append(button);
+      });
+    }
+    function chooseAnswer(optionIndex) {
+      if (!running || answered) return;
+      answered = true;
+      optionsEl.querySelectorAll('button').forEach(button => { button.disabled = true; });
+      if (optionIndex === deck[questionIndex].answer) {
+        score++;
+        scoreEl.textContent = score;
+        saveScore();
+      }
+      message.textContent = 'Answer recorded. Next question…';
+      advanceTimer = setTimeout(() => {
+        if (!running) return;
+        questionIndex++;
+        showQuestion();
+      }, 550);
+    }
+    function finish(title) {
+      running = false;
+      clearInterval(timer);
+      clearTimeout(advanceTimer);
+      timer = null;
+      advanceTimer = null;
+      timeEl.classList.remove('urgent');
+      message.textContent = `${title} Final score: ${score}.`;
+      startButton.textContent = 'Play again';
+      document.querySelector('#result-title').textContent = title;
+      document.querySelector('#result-player').textContent = playerName;
+      document.querySelector('#result-score').textContent = score;
+      resultOverlay.hidden = false;
+    }
+    function start() {
+      playerName = playerNameInput.value.trim();
+      if (!playerName) { playerNameInput.focus(); message.textContent = 'Enter your name to start.'; return; }
+      if (!questions.length) { message.textContent = 'No questions found. Check questions.js.'; return; }
+      writeStorage('pictureMatchPlayer', playerName);
+      const record = readRecord(playerName);
+      best = Number(record.best) || 0;
+      bestEl.textContent = best;
+      scoreLabel.textContent = `${playerName}'s score`;
+      clearInterval(timer);
+      clearTimeout(advanceTimer);
+      score = 0;
+      seconds = TOTAL_TIME_SECONDS;
+      questionIndex = 0;
+      deck = shuffle(questions);
+      running = true;
+      resultOverlay.hidden = true;
+      questionCard.hidden = false;
+      timeEl.classList.remove('urgent');
+      scoreEl.textContent = '0';
+      timeEl.textContent = String(TOTAL_TIME_SECONDS);
+      startButton.textContent = 'Restart';
+      message.textContent = `Answer as many questions as you can in ${TOTAL_TIME_SECONDS} seconds.`;
+      saveScore();
+      showQuestion();
+      timer = setInterval(() => {
+        seconds--;
+        timeEl.textContent = seconds;
+        if (seconds <= 10) timeEl.classList.add('urgent');
+        if (seconds <= 0) finish("Time's up!");
+      }, 1000);
+    }
+
+    playerNameInput.value = readStorage('pictureMatchPlayer', '');
+    startButton.addEventListener('click', start);
+    document.querySelector('#play-again').addEventListener('click', () => { resultOverlay.hidden = true; start(); });
+    resultOverlay.addEventListener('click', event => { if (event.target === resultOverlay) resultOverlay.hidden = true; });
+  </script>
+</body>
+</html>

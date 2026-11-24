@@ -1,0 +1,316 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Picture Match Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light; --ink: #252525; --muted: #717171; --line: #dedede; --paper: #f7f7f5; --white: #fff; --red: #a64242; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.45 "Inter", sans-serif; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 34px 22px 56px; }
+    .page-nav { display: flex; justify-content: flex-end; gap: 18px; margin-bottom: 26px; }
+    .page-nav a { color: var(--ink); text-decoration: none; font-weight: 600; }
+    .page-nav a:hover { text-decoration: underline; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.1rem); letter-spacing: -.04em; }
+    .sub { margin: 5px 0 0; color: var(--muted); }
+    .stats { display: flex; gap: 24px; text-align: right; }
+    .stat-label { display: block; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+    .stat-value { display: block; font-size: 1.35rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; }
+    .player-controls { display: flex; align-items: center; gap: 10px; }
+    .player-controls label { color: var(--muted); font-size: .9rem; }
+    input { width: 180px; max-width: 45vw; padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; font: inherit; }
+    .message { color: var(--muted); min-height: 1.5em; }
+    button { appearance: none; border: 0; border-radius: 6px; padding: 10px 16px; background: var(--ink); color: white; font: inherit; font-weight: 600; cursor: pointer; }
+    button:hover { background: #444; }
+    button:focus-visible, .name:focus-visible, .drop:focus-visible { outline: 3px solid #555; outline-offset: 2px; }
+    .board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .card { position: relative; min-width: 0; overflow: hidden; background: var(--white); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+    .card.over { border-color: #555; box-shadow: 0 0 0 3px #25252522; transform: translateY(-2px); }
+    .card.correct { border-color: #bdbdbd; }
+    .photo { display: grid; place-items: center; height: 136px; padding: 14px; background: white; }
+    .photo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .drop { display: grid; place-items: center; min-height: 56px; margin: 0 10px 10px; padding: 8px; border: 1px dashed #c9c9c9; border-radius: 5px; color: #929292; text-align: center; font-size: .9rem; }
+    .card.over .drop { border-color: #555; background: #f0f0ee; }
+    .card.correct .drop { border-style: solid; border-color: #bdbdbd; background: #f0f0ee; color: var(--ink); font-weight: 600; }
+    .drop .name { cursor: grab; }
+    .names { display: flex; flex-wrap: wrap; gap: 9px; padding: 16px; margin-top: 18px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; }
+    .name { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 15px; border: 2px solid #777; border-radius: 6px; background: #fff; color: #222; box-shadow: 0 1px 2px #00000014; font-size: .98rem; font-weight: 600; cursor: grab; user-select: none; transition: background .12s, color .12s, border-color .12s, box-shadow .12s, transform .12s; }
+    .name:hover { border-color: #222; background: #f0f2ef; box-shadow: 0 2px 5px #00000020; transform: translateY(-1px); }
+    .name:active { cursor: grabbing; }
+    .name.selected { border-color: #222; background: #333; color: #fff; box-shadow: 0 0 0 3px #25252533; transform: translateY(-1px); }
+    .name.used { border-color: #bdbdbd; background: #f0f0ee; color: #555; cursor: default; }
+    .hint { margin: 9px 2px 0; color: var(--muted); font-size: .85rem; }
+    .score-pop { position: absolute; top: -8px; right: 12px; color: var(--ink); font-size: 1rem; font-weight: 700; animation: pop-up .8s ease-out forwards; pointer-events: none; }
+    .stat-value.bump { animation: bump .35s ease-out; }
+    .stat-value.urgent { color: var(--red); animation: pulse 1s infinite; }
+    .overlay { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: #202020a6; animation: fade-in .25s ease-out; }
+    .overlay[hidden] { display: none; }
+    .result { width: min(390px, 100%); padding: 30px 24px; border-radius: 10px; background: white; text-align: center; box-shadow: 0 18px 60px #0003; animation: result-in .4s cubic-bezier(.2,.8,.2,1); }
+    .result h2 { margin: 0; font-size: 1.8rem; }
+    .result p { margin: 8px 0 22px; color: var(--muted); }
+    .result-score { margin: 14px 0 22px; font-size: 3rem; font-weight: 750; line-height: 1; }
+    @keyframes pop-up { 0% { opacity: 0; transform: translateY(8px) scale(.8); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px) scale(1.1); } }
+    @keyframes bump { 50% { transform: scale(1.35); color: var(--ink); } }
+    @keyframes pulse { 50% { opacity: .45; } }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes result-in { from { transform: translateY(18px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+    @media (max-width: 850px) { .board { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .wrap { padding: 22px 14px 36px; } header { align-items: flex-start; flex-direction: column; gap: 14px; } .stats { width: 100%; justify-content: space-between; text-align: left; } .toolbar { align-items: stretch; flex-direction: column; } .player-controls { flex-wrap: wrap; } .player-controls label { width: 100%; } input { width: 100%; max-width: none; } button { width: 100%; } .board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; } .photo { height: 112px; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <nav class="page-nav" aria-label="Quiz pages"><a href="multiple-choice.html">Multiple choice →</a></nav>
+    <header>
+      <div><h1>Picture Match</h1><p class="sub">Drag each name onto the matching picture.</p></div>
+      <div class="stats" aria-label="Quiz score">
+        <div><span class="stat-label" id="score-label">Score</span><span class="stat-value" id="score">0</span></div>
+        <div><span class="stat-label">Time</span><span class="stat-value" id="time">40</span></div>
+        <div><span class="stat-label">Best</span><span class="stat-value" id="best">0</span></div>
+      </div>
+    </header>
+    <section class="toolbar" aria-live="polite">
+      <div class="message" id="message">Match as many as you can in 40 seconds. Each correct match is worth 1 point.</div>
+      <div class="player-controls"><label for="player-name">Your name</label><input id="player-name" maxlength="24" placeholder="Enter your name" autocomplete="given-name"><button id="start" type="button">Start quiz</button></div>
+    </section>
+    <section class="board" id="board" aria-label="Pictures to match"></section>
+    <section class="names" id="names" aria-label="Names to drag"></section>
+    <p class="hint">On a touch screen, tap a name, then tap its picture.</p>
+  </main>
+  <div class="overlay" id="result-overlay" hidden>
+    <section class="result" role="dialog" aria-modal="true" aria-labelledby="result-title">
+      <h2 id="result-title">Time's up!</h2>
+      <p id="result-player"></p>
+      <div class="result-score" id="result-score">0</div>
+      <p>points</p>
+      <button id="play-again" type="button">Play again</button>
+    </section>
+  </div>
+  <script>
+    // Change this value to set the length of each quiz round.
+    const TOTAL_TIME_SECONDS = 40;
+    // This fallback keeps the quiz usable when index.html is opened directly.
+    // When served from localhost, quiz-data.json is loaded as the source of truth.
+    const fallbackManifest = [
+      { name: 'youtube', image: 'images/youtube.jpg' },
+      { name: 'starbucks', image: 'images/starbucks.jpg' },
+      { name: 'nike', image: 'images/nike.jpg' },
+      { name: 'chicken licken', image: 'images/chicken_licken.png' },
+      { name: 'apple', image: 'images/apple.jpg' },
+      { name: 'addiadas', image: 'images/addiadas.jpg' },
+      { name: '10 Clicks', image: 'images/10_Clicks.png' },
+      { name: '09 Mr Price', image: 'images/09_Mr_Price.png' },
+      { name: '08 Nandos', image: 'images/08_Nandos.png' },
+      { name: '07 Capitec', image: 'images/07_Capitec.png' },
+      { name: '06 Woolworths', image: 'images/06_Woolworths.png' },
+      { name: '05 Pick n Pay', image: 'images/05_Pick_n_Pay.png' },
+      { name: '04 Shoprite', image: 'images/04_Shoprite.png' },
+      { name: '03 Checkers', image: 'images/03_Checkers.png' },
+      { name: '02 Vodacom', image: 'images/02_Vodacom.png' },
+      { name: '01 MTN', image: 'images/01_MTN.png' }
+    ];
+    let nameKeys = [];
+    let imagePaths = Object.create(null);
+    const board = document.querySelector('#board');
+    const nameTray = document.querySelector('#names');
+    const scoreEl = document.querySelector('#score');
+    const timeEl = document.querySelector('#time');
+    const bestEl = document.querySelector('#best');
+    const message = document.querySelector('#message');
+    const startButton = document.querySelector('#start');
+    const playerNameInput = document.querySelector('#player-name');
+    const scoreLabel = document.querySelector('#score-label');
+    const resultOverlay = document.querySelector('#result-overlay');
+    startButton.disabled = true;
+    message.textContent = 'Loading picture list…';
+    let score = 0, seconds = TOTAL_TIME_SECONDS, timer = null, running = false, selected = null;
+    let usedNames = new Set();
+    playerNameInput.value = readStorage('pictureMatchPlayer', '');
+    let best = 0, playerName = '';
+    bestEl.textContent = best;
+
+    function readStorage(key, fallback = null) {
+      try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+    }
+    function writeStorage(key, value) {
+      try { localStorage.setItem(key, value); } catch { /* The quiz still works if storage is blocked. */ }
+    }
+    function playerRecordKey(name) { return `pictureMatchScore:${name.trim().toLocaleLowerCase()}`; }
+    function loadPlayerBest(name) {
+      try {
+        const record = JSON.parse(readStorage(playerRecordKey(name), '{"best":0}'));
+        return Number(record.best) || 0;
+      } catch { return 0; }
+    }
+    function savePlayerScore() {
+      const key = playerRecordKey(playerName);
+      let record;
+      try { record = JSON.parse(readStorage(key, '{"best":0}')); } catch { record = { best: 0 }; }
+      if (!record || typeof record !== 'object' || Array.isArray(record)) record = { best: 0 };
+      record.name = playerName;
+      record.score = score;
+      record.best = Math.max(Number(record.best) || 0, score);
+      writeStorage(key, JSON.stringify(record));
+      best = record.best;
+      bestEl.textContent = best;
+    }
+
+    function isValidManifest(data) {
+      if (!Array.isArray(data) || data.length === 0) return false;
+      const seen = new Set();
+      return data.every(item => {
+        if (!item || typeof item.name !== 'string' || !item.name.trim() ||
+            typeof item.image !== 'string' || !item.image.startsWith('images/') || item.image.includes('..') ||
+            seen.has(item.name)) return false;
+        seen.add(item.name);
+        return true;
+      });
+    }
+    async function loadManifest() {
+      let manifest = fallbackManifest;
+      if (location.protocol !== 'file:') {
+        try {
+          const response = await fetch('./quiz-data.json', { cache: 'no-store' });
+          const externalManifest = await response.json();
+          if (response.ok && isValidManifest(externalManifest)) manifest = externalManifest;
+        } catch { /* Use the built-in list when the JSON file is unavailable. */ }
+      }
+      if (!isValidManifest(manifest)) manifest = fallbackManifest;
+      nameKeys = manifest.map(item => item.name);
+      imagePaths = Object.create(null);
+      for (const item of manifest) imagePaths[item.name] = item.image;
+      render();
+      startButton.disabled = false;
+      message.textContent = `Match as many as you can in ${TOTAL_TIME_SECONDS} seconds.`;
+    }
+
+    function shuffle(list) {
+      const result = [...list];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+    function render() {
+      board.innerHTML = '';
+      nameTray.innerHTML = '';
+      shuffle(nameKeys).forEach(name => {
+        const card = document.createElement('article');
+        card.className = 'card'; card.dataset.answer = name; card.tabIndex = 0;
+        const photo = document.createElement('div'); photo.className = 'photo';
+        const image = document.createElement('img'); image.src = imagePaths[name]; image.alt = `Picture for ${name}`; image.loading = 'lazy';
+        photo.append(image);
+        const drop = document.createElement('div'); drop.className = 'drop'; drop.textContent = 'Drop name here';
+        card.append(photo, drop);
+        card.addEventListener('dragover', event => { if (running) { event.preventDefault(); card.classList.add('over'); } });
+        card.addEventListener('dragleave', event => { if (!card.contains(event.relatedTarget)) card.classList.remove('over'); });
+        card.addEventListener('drop', event => { event.preventDefault(); card.classList.remove('over'); if (running) checkMatch(event.dataTransfer.getData('text/plain'), card); });
+        card.addEventListener('click', () => { if (running && selected) checkMatch(selected.dataset.name, card); });
+        card.addEventListener('keydown', event => { if (running && selected && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); checkMatch(selected.dataset.name, card); } });
+        board.append(card);
+      });
+      shuffle(nameKeys).forEach(name => {
+        const tile = document.createElement('div');
+        tile.className = 'name'; tile.textContent = name; tile.draggable = true; tile.tabIndex = 0; tile.dataset.name = name;
+        tile.setAttribute('role', 'button'); tile.setAttribute('aria-pressed', 'false');
+        tile.addEventListener('dragstart', event => {
+          if (!running) { event.preventDefault(); return; }
+          selectName(tile, name);
+          event.dataTransfer.setData('text/plain', name);
+        });
+        tile.addEventListener('click', event => {
+          event.stopPropagation();
+          if (running && !tile.classList.contains('used')) selectName(tile, name);
+        });
+        tile.addEventListener('keydown', event => { if (running && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); tile.click(); } });
+        nameTray.append(tile);
+      });
+    }
+    function selectName(tile, name) {
+      if (selected) {
+        selected.classList.remove('selected');
+        selected.setAttribute('aria-pressed', 'false');
+      }
+      selected = tile;
+      tile.classList.add('selected');
+      tile.setAttribute('aria-pressed', 'true');
+      message.textContent = `Selected ${name}. Click the matching picture or drag the name there.`;
+    }
+    function clearSelection() {
+      if (!selected) return;
+      selected.classList.remove('selected');
+      selected.setAttribute('aria-pressed', 'false');
+      selected = null;
+    }
+    function checkMatch(name, target) {
+      if (!running || !nameKeys.includes(name) || usedNames.has(name) || target.classList.contains('correct')) return;
+      const tile = [...document.querySelectorAll('.name')].find(el => el.dataset.name === name);
+      const targetBox = target.querySelector('.drop');
+      if (!tile || !targetBox) return;
+      const sourceBox = tile.parentElement.classList.contains('drop') ? tile.parentElement : null;
+      if (sourceBox === targetBox) { clearSelection(); return; }
+
+      const displacedTile = targetBox.querySelector('.name');
+      if (displacedTile) {
+        displacedTile.classList.remove('selected');
+        displacedTile.setAttribute('aria-pressed', 'false');
+        nameTray.append(displacedTile);
+      }
+      if (sourceBox) sourceBox.textContent = 'Drop name here';
+      targetBox.replaceChildren(tile);
+      clearSelection();
+
+      if (name === target.dataset.answer) {
+        target.classList.add('correct');
+        tile.classList.add('used');
+        tile.draggable = false;
+        tile.setAttribute('aria-disabled', 'true');
+        usedNames.add(name);
+        score++; scoreEl.textContent = score;
+        scoreEl.classList.remove('bump'); void scoreEl.offsetWidth; scoreEl.classList.add('bump');
+        const pop = document.createElement('span'); pop.className = 'score-pop'; pop.textContent = '+1'; scoreEl.parentElement.append(pop); setTimeout(() => pop.remove(), 850);
+        savePlayerScore();
+        message.textContent = 'Correct! Keep going.';
+        if (score === nameKeys.length) finish('You matched every picture!');
+      } else {
+        message.textContent = 'Name placed. Keep matching.';
+      }
+    }
+    function finish(text) {
+      running = false; clearInterval(timer); timer = null;
+      message.textContent = `${text} Final score: ${score}.`;
+      startButton.textContent = 'Play again';
+      timeEl.classList.remove('urgent');
+      document.querySelector('#result-title').textContent = text;
+      document.querySelector('#result-player').textContent = playerName;
+      document.querySelector('#result-score').textContent = score;
+      resultOverlay.hidden = false;
+    }
+    function start() {
+      playerName = playerNameInput.value.trim();
+      if (!playerName) { playerNameInput.focus(); message.textContent = 'Enter your name to start.'; return; }
+      writeStorage('pictureMatchPlayer', playerName);
+      best = loadPlayerBest(playerName); bestEl.textContent = best;
+      scoreLabel.textContent = `${playerName}'s score`;
+      clearInterval(timer); score = 0; seconds = TOTAL_TIME_SECONDS; selected = null; usedNames = new Set(); running = true; resultOverlay.hidden = true; timeEl.classList.remove('urgent');
+      scoreEl.textContent = '0'; timeEl.textContent = String(TOTAL_TIME_SECONDS); startButton.textContent = 'Restart';
+      message.textContent = `Match as many as you can in ${TOTAL_TIME_SECONDS} seconds.`;
+      render();
+      savePlayerScore();
+      timer = setInterval(() => { seconds--; timeEl.textContent = seconds; if (seconds <= 10) timeEl.classList.add('urgent'); if (seconds <= 0) finish("Time's up!"); }, 1000);
+    }
+    startButton.addEventListener('click', start);
+    document.querySelector('#play-again').addEventListener('click', () => { resultOverlay.hidden = true; start(); });
+    resultOverlay.addEventListener('click', event => { if (event.target === resultOverlay) resultOverlay.hidden = true; });
+    loadManifest();
+  </script>
+</body>
+</html>
+
