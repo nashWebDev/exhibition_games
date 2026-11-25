@@ -76,7 +76,7 @@
       </div>
     </header>
     <section class="toolbar">
-      <div class="message" id="message" aria-live="polite">Answer as many questions as you can in 40 seconds. Correct answers earn 1 point.</div>
+      <div class="message" id="message" aria-live="polite">Answer as many questions as you can in 90 seconds. Correct answers earn 1 point.</div>
       <div class="player-controls">
         <label for="player-name">Your name</label>
         <input id="player-name" maxlength="24" placeholder="Enter your name" autocomplete="given-name">
@@ -102,7 +102,7 @@
   <script src="questions.js"></script>
   <script>
     // Change this value to set the length of each multiple-choice round.
-    const TOTAL_TIME_SECONDS = 40;
+    const TOTAL_TIME_SECONDS = 90;
     const questions = Array.isArray(window.quizQuestions) ? window.quizQuestions : [];
     const scoreEl = document.querySelector('#score');
     const timeEl = document.querySelector('#time');
